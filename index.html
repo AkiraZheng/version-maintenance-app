@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>版本维护 Checklist</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>版本维护 Checklist</h1>
+            <div class="actions">
+                <button id="newWeekBtn" class="btn btn-warning">新的一周</button>
+                <button id="exportBtn" class="btn btn-secondary">导出数据</button>
+                <button id="importBtn" class="btn btn-secondary">导入数据</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+            </div>
+        </header>
+
+        <div class="day-selector">
+            <button class="day-btn active" data-day="4">周四</button>
+            <button class="day-btn" data-day="5">周五</button>
+            <button class="day-btn" data-day="1">周一 (发邮件)</button>
+        </div>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <h2>版本列表</h2>
+                    <button id="addVersionBtn" class="btn btn-primary btn-sm">+ 添加版本</button>
+                </div>
+                <div id="versionList" class="version-list"></div>
+            </aside>
+
+            <main class="content">
+                <div id="versionDetail" class="version-detail">
+                    <p class="placeholder">请选择一个版本查看详情</p>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>所有者：郑钿(z00939249)</p>
+    </footer>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
