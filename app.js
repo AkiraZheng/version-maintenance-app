@@ -652,6 +652,9 @@ class VersionMaintenanceApp {
         if (!this.data || !this.data.versions) return incompleteTasks;
 
         this.data.versions.forEach(version => {
+            // 跳过非活跃状态的版本
+            if (version.status === 'inactive') return;
+
             [1, 4, 5].forEach(day => {
                 const dayKey = 'day_' + day;
                 const checklistKey = version.id + '_' + dayKey;
