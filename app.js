@@ -633,9 +633,28 @@ class VersionMaintenanceApp {
         if (panel) {
             panel.classList.toggle('active');
             if (panel.classList.contains('active')) {
+                // Reset filters
+                const filterDay = document.getElementById('filterDay');
+                const filterVersion = document.getElementById('filterVersion');
+                if (filterDay) filterDay.value = '';
+                if (filterVersion) filterVersion.value = '';
+                this.populateVersionFilter();
                 this.renderIncompleteTasks();
             }
         }
+    }
+
+    populateVersionFilter() {
+        const versionSelect = document.getElementById('filterVersion');
+        if (!versionSelect || !this.data || !this.data.versions) return;
+
+        const activeVersions = this.data.versions.filter(v => v.status !== 'inactive');
+        versionSelect.innerHTML = '<option value="">全部</option>' +
+            activeVersions.map(v => `<option value="${v.id}">${this.escapeHtml(v.name)}</option>`).join('');
+    }
+
+    applyIncompleteFilters() {
+        this.renderIncompleteTasks();
     }
 
     hideIncompletePanel() {
@@ -705,7 +724,18 @@ class VersionMaintenanceApp {
     renderIncompleteTasks() {
         const list = document.getElementById('incompleteList');
         const countEl = document.getElementById('incompleteCount');
-        const tasks = this.getAllIncompleteTasks();
+        let tasks = this.getAllIncompleteTasks();
+
+        // Apply filters
+        const filterDay = document.getElementById('filterDay')?.value;
+        const filterVersion = document.getElementById('filterVersion')?.value;
+
+        if (filterDay) {
+            tasks = tasks.filter(t => t.day === parseInt(filterDay));
+        }
+        if (filterVersion) {
+            tasks = tasks.filter(t => t.versionId === filterVersion);
+        }
 
         if (countEl) {
             countEl.textContent = tasks.length;

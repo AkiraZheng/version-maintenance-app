@@ -59,6 +59,23 @@
             <span id="incompleteCount" class="incomplete-count"></span>
             <button class="incomplete-panel-close" onclick="app.hideIncompletePanel()">&times;</button>
         </div>
+        <div class="incomplete-filters">
+            <div class="filter-group">
+                <label>日期</label>
+                <select id="filterDay" onchange="app.applyIncompleteFilters()">
+                    <option value="">全部</option>
+                    <option value="1">周一</option>
+                    <option value="4">周四</option>
+                    <option value="5">周五</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>版本</label>
+                <select id="filterVersion" onchange="app.applyIncompleteFilters()">
+                    <option value="">全部</option>
+                </select>
+            </div>
+        </div>
         <div id="incompleteList" class="incomplete-list"></div>
     </div>
 
