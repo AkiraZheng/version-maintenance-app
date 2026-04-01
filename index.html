@@ -11,6 +11,7 @@
         <header>
             <h1>版本维护 Checklist</h1>
             <div class="actions">
+                <button id="showIncompleteBtn" class="btn btn-primary">📌 未完成任务</button>
                 <button id="newWeekBtn" class="btn btn-warning">新的一周</button>
                 <button id="exportBtn" class="btn btn-secondary">导出数据</button>
                 <button id="importBtn" class="btn btn-secondary">导入数据</button>
@@ -50,6 +51,15 @@
             <span class="modal-close">&times;</span>
             <div id="modalBody"></div>
         </div>
+    </div>
+
+    <div id="incompletePanel" class="incomplete-panel">
+        <div class="incomplete-panel-header">
+            <h3>📌 未完成任务</h3>
+            <span id="incompleteCount" class="incomplete-count"></span>
+            <button class="incomplete-panel-close" onclick="app.hideIncompletePanel()">&times;</button>
+        </div>
+        <div id="incompleteList" class="incomplete-list"></div>
     </div>
 
     <script src="app.js"></script>

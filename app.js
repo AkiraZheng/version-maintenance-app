@@ -306,6 +306,13 @@ class VersionMaintenanceApp {
             this.startNewWeek();
         });
 
+        this.elements.showIncompleteBtn = document.getElementById('showIncompleteBtn');
+        if (this.elements.showIncompleteBtn) {
+            this.elements.showIncompleteBtn.addEventListener('click', () => {
+                this.toggleIncompletePanel();
+            });
+        }
+
     }
 
     saveData() {
@@ -619,6 +626,172 @@ class VersionMaintenanceApp {
 
     bindEmailEvents(versionId, dayKey) {
         // 事件通过内联onclick绑定
+    }
+
+    toggleIncompletePanel() {
+        const panel = document.getElementById('incompletePanel');
+        if (panel) {
+            panel.classList.toggle('active');
+            if (panel.classList.contains('active')) {
+                this.renderIncompleteTasks();
+            }
+        }
+    }
+
+    hideIncompletePanel() {
+        const panel = document.getElementById('incompletePanel');
+        if (panel) {
+            panel.classList.remove('active');
+        }
+    }
+
+    getAllIncompleteTasks() {
+        const incompleteTasks = [];
+        const dayNames = { 1: '周一', 4: '周四', 5: '周五' };
+
+        if (!this.data || !this.data.versions) return incompleteTasks;
+
+        this.data.versions.forEach(version => {
+            [1, 4, 5].forEach(day => {
+                const dayKey = 'day_' + day;
+                const checklistKey = version.id + '_' + dayKey;
+                const checklist = this.data.checklists[checklistKey] || [];
+
+                checklist.forEach((item, index) => {
+                    if (!item.completed) {
+                        incompleteTasks.push({
+                            type: 'main',
+                            versionId: version.id,
+                            versionName: version.name,
+                            day: day,
+                            dayName: dayNames[day],
+                            dayKey: dayKey,
+                            index: index,
+                            text: item.text,
+                            hasSubtasks: item.subtasks && item.subtasks.length > 0,
+                            subtaskCount: item.subtasks ? item.subtasks.filter(s => !s.completed).length : 0
+                        });
+                    }
+
+                    // Check subtasks
+                    if (item.subtasks && item.subtasks.length > 0) {
+                        item.subtasks.forEach((subtask, subIndex) => {
+                            if (!subtask.completed) {
+                                incompleteTasks.push({
+                                    type: 'subtask',
+                                    versionId: version.id,
+                                    versionName: version.name,
+                                    day: day,
+                                    dayName: dayNames[day],
+                                    dayKey: dayKey,
+                                    parentIndex: index,
+                                    index: subIndex,
+                                    text: subtask.text,
+                                    parentText: item.text
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        return incompleteTasks;
+    }
+
+    renderIncompleteTasks() {
+        const list = document.getElementById('incompleteList');
+        const countEl = document.getElementById('incompleteCount');
+        const tasks = this.getAllIncompleteTasks();
+
+        if (countEl) {
+            countEl.textContent = tasks.length;
+        }
+
+        if (!list) return;
+
+        if (tasks.length === 0) {
+            list.innerHTML = `
+                <div class="incomplete-empty">
+                    <div class="incomplete-empty-icon">🎉</div>
+                    <div class="incomplete-empty-text">太棒了！所有任务都已完成</div>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = tasks.map((task, i) => {
+            if (task.type === 'subtask') {
+                return `
+                    <div class="incomplete-item" onclick="app.navigateToTask('${task.versionId}', ${task.day}, ${task.parentIndex}, ${task.index})">
+                        <div class="incomplete-item-version">
+                            ${this.escapeHtml(task.versionName)}
+                            <span class="incomplete-item-day">${task.dayName}</span>
+                        </div>
+                        <div class="incomplete-item-text">${this.escapeHtml(task.parentText)}</div>
+                        <div class="incomplete-item-subtask">↳ ${this.escapeHtml(task.text)}</div>
+                    </div>
+                `;
+            } else {
+                const subtaskInfo = task.hasSubtasks ? ` (含 ${task.subtaskCount} 个未完成子任务)` : '';
+                return `
+                    <div class="incomplete-item" onclick="app.navigateToTask('${task.versionId}', ${task.day}, ${task.index})">
+                        <div class="incomplete-item-version">
+                            ${this.escapeHtml(task.versionName)}
+                            <span class="incomplete-item-day">${task.dayName}</span>
+                        </div>
+                        <div class="incomplete-item-text">${this.escapeHtml(task.text)}${subtaskInfo}</div>
+                    </div>
+                `;
+            }
+        }).join('');
+    }
+
+    navigateToTask(versionId, day, parentIndex, subIndex = null) {
+        this.hideIncompletePanel();
+
+        // Set the day
+        this.currentDay = day;
+
+        // Select the version
+        this.selectedVersionId = versionId;
+
+        // Render to update the UI
+        this.render();
+
+        // Scroll to the task after a brief delay to allow rendering
+        setTimeout(() => {
+            let targetSelector;
+            if (subIndex !== null) {
+                // Navigate to subtask
+                targetSelector = `.subtask[data-parent="${parentIndex}"][data-index="${subIndex}"]`;
+            } else {
+                // Navigate to main task
+                targetSelector = `.checklist-item[data-index="${parentIndex}"]`;
+            }
+
+            const targetEl = document.querySelector(targetSelector);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetEl.style.animation = 'highlight-pulse 1s ease';
+            }
+
+            // If it's a main task with subtasks, expand them
+            if (subIndex === null && parentIndex !== undefined) {
+                const expandKey = versionId + '_day_' + day + '_' + parentIndex;
+                if (!this.expandedSubtasks[expandKey]) {
+                    this.expandedSubtasks[expandKey] = true;
+                    this.renderVersionDetail();
+                    // Re-scroll after expanding subtasks
+                    setTimeout(() => {
+                        const expandedEl = document.querySelector(targetSelector);
+                        if (expandedEl) {
+                            expandedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 100);
+                }
+            }
+        }, 100);
     }
 
     showModal(content) {
