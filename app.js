@@ -1336,6 +1336,14 @@ class VersionMaintenanceApp {
                 } else if (imageData !== undefined) {
                     subtask.image = imageData;
                 }
+                // 如果状态设置为已完成，自动勾选任务
+                if (taskStatus === 'completed') {
+                    subtask.completed = true;
+                    subtask.completedAt = this.getCurrentTime();
+                } else {
+                    subtask.completed = false;
+                    delete subtask.completedAt;
+                }
                 this.saveData();
                 this.hideModal();
                 this.renderVersionDetail();
@@ -1355,6 +1363,14 @@ class VersionMaintenanceApp {
                     delete item.image;
                 } else if (imageData !== undefined) {
                     item.image = imageData;
+                }
+                // 如果状态设置为已完成，自动勾选任务
+                if (taskStatus === 'completed') {
+                    item.completed = true;
+                    item.completedAt = this.getCurrentTime();
+                } else {
+                    item.completed = false;
+                    delete item.completedAt;
                 }
                 this.saveData();
                 this.hideModal();
@@ -1683,7 +1699,7 @@ class VersionMaintenanceApp {
     }
 
     async startNewWeek() {
-        const message = '确定要开始新的一周吗？\n此操作将会：\n1. 创建备份文件（浏览器会弹出下载，请手动保存）\n2. 将所有版本的所有checklist重置为未check状态\n\n备份文件下载后可以随时通过"导入数据"功能恢复。';
+        const message = '确定要开始新的一周吗？\n此操作将会：\n1. 创建备份文件（浏览器会弹出下载，请手动保存）\n2. 将所有任务状态重置为待选择\n\n备份文件下载后可以随时通过"导入数据"功能恢复。';
 
         if (confirm(message)) {
             await this.autoBackup('new-week');
@@ -1693,14 +1709,18 @@ class VersionMaintenanceApp {
                     this.data.checklists[key] = this.data.checklists[key].map(item => {
                         const newItem = {
                             ...item,
-                            completed: false
+                            completed: false,
+                            completedAt: null,
+                            taskStatus: 'pending'
                         };
 
-                        // 取消所有子任务的勾选状态
+                        // 所有子任务也重置为待选择
                         if (newItem.subtasks && newItem.subtasks.length > 0) {
                             newItem.subtasks = newItem.subtasks.map(subtask => ({
                                 ...subtask,
-                                completed: false
+                                completed: false,
+                                completedAt: null,
+                                taskStatus: 'pending'
                             }));
                         }
 
@@ -1711,7 +1731,7 @@ class VersionMaintenanceApp {
 
             this.saveData();
             this.render();
-            this.showToast('新的一周已开始，所有数据已重置');
+            this.showToast('新的一周已开始，所有任务已重置为待选择');
         }
     }
 
