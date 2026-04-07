@@ -205,14 +205,14 @@ class VersionMaintenanceApp {
             if (data.checklists[key]) {
                 data.checklists[key] = data.checklists[key].map(item => ({
                     ...item,
-                    cautions: item.notes || item.cautions || '',
-                    notes: item.notes2 || '',
+                    cautions: item.cautions || item.notes || '',
+                    notes: item.notes2 || item.notes || '',
                     link: item.link || '',
                     image: item.image || '',
                     subtasks: item.subtasks ? item.subtasks.map(subtask => ({
                         ...subtask,
-                        cautions: subtask.notes || subtask.cautions || '',
-                        notes: subtask.notes2 || '',
+                        cautions: subtask.cautions || subtask.notes || '',
+                        notes: subtask.notes2 || subtask.notes || '',
                         link: subtask.link || '',
                         image: subtask.image || ''
                     })) : []
