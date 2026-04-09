@@ -1360,10 +1360,13 @@ class VersionMaintenanceApp {
                 if (taskStatus === 'completed') {
                     subtask.completed = true;
                     subtask.completedAt = this.getCurrentTime();
-                } else {
+                }
+                // 如果状态设置为非已完成且原来已勾选，则取消勾选
+                else if (taskStatus !== null && taskStatus !== undefined && subtask.completed) {
                     subtask.completed = false;
                     delete subtask.completedAt;
                 }
+                // taskStatus 为 null/undefined 时，保持 completed 不变
                 this.saveData();
                 this.hideModal();
                 this.renderVersionDetail();
@@ -1388,10 +1391,13 @@ class VersionMaintenanceApp {
                 if (taskStatus === 'completed') {
                     item.completed = true;
                     item.completedAt = this.getCurrentTime();
-                } else {
+                }
+                // 如果状态设置为非已完成且原来已勾选，则取消勾选
+                else if (taskStatus !== null && taskStatus !== undefined && item.completed) {
                     item.completed = false;
                     delete item.completedAt;
                 }
+                // taskStatus 为 null/undefined 时，保持 completed 不变
                 this.saveData();
                 this.hideModal();
                 this.renderVersionDetail();
@@ -1746,22 +1752,33 @@ class VersionMaintenanceApp {
                     this.data.checklists[key] = this.data.checklists[key].map(item => {
                         const newItem = { ...item };
 
-                        // 重置主任务（如果已勾选）
-                        if (newItem.completed) {
+                        // 重置主任务（如果已勾选且有状态为completed）
+                        if (newItem.completed && newItem.taskStatus === 'completed') {
                             newItem.completed = false;
                             newItem.completedAt = null;
                             newItem.taskStatus = 'pending';
+                        } else if (newItem.completed) {
+                            // 如果已勾选但没有状态（taskStatus为null），只取消勾选
+                            newItem.completed = false;
+                            delete newItem.completedAt;
                         }
 
                         // 重置子任务（如果存在）
                         if (newItem.subtasks && newItem.subtasks.length > 0) {
                             newItem.subtasks = newItem.subtasks.map(subtask => {
-                                if (subtask.completed) {
+                                if (subtask.completed && subtask.taskStatus === 'completed') {
                                     return {
                                         ...subtask,
                                         completed: false,
                                         completedAt: null,
                                         taskStatus: 'pending'
+                                    };
+                                } else if (subtask.completed) {
+                                    // 如果已勾选但没有状态，只取消勾选
+                                    return {
+                                        ...subtask,
+                                        completed: false,
+                                        completedAt: null
                                     };
                                 }
                                 return subtask;
@@ -1775,7 +1792,7 @@ class VersionMaintenanceApp {
 
             this.saveData();
             this.render();
-            this.showToast('新的一周已开始，已勾选的任务已重置为待选择');
+            this.showToast('新的一周已开始');
         }
     }
 
