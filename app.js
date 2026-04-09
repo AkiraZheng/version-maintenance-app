@@ -1744,27 +1744,31 @@ class VersionMaintenanceApp {
             Object.keys(this.data.checklists).forEach(key => {
                 if (this.data.checklists[key]) {
                     this.data.checklists[key] = this.data.checklists[key].map(item => {
-                        // 只重置已勾选的任务
-                        if (item.completed) {
-                            const newItem = {
-                                ...item,
-                                completed: false,
-                                completedAt: null,
-                                taskStatus: 'pending'
-                            };
+                        const newItem = { ...item };
 
-                            // 已勾选的子任务也重置
-                            if (newItem.subtasks && newItem.subtasks.length > 0) {
-                                newItem.subtasks = newItem.subtasks.map(subtask => ({
-                                    ...subtask,
-                                    completed: false,
-                                    completedAt: null,
-                                    taskStatus: 'pending'
-                                }));
-                            }
-                            return newItem;
+                        // 重置主任务（如果已勾选）
+                        if (newItem.completed) {
+                            newItem.completed = false;
+                            newItem.completedAt = null;
+                            newItem.taskStatus = 'pending';
                         }
-                        return item;
+
+                        // 重置子任务（如果存在）
+                        if (newItem.subtasks && newItem.subtasks.length > 0) {
+                            newItem.subtasks = newItem.subtasks.map(subtask => {
+                                if (subtask.completed) {
+                                    return {
+                                        ...subtask,
+                                        completed: false,
+                                        completedAt: null,
+                                        taskStatus: 'pending'
+                                    };
+                                }
+                                return subtask;
+                            });
+                        }
+
+                        return newItem;
                     });
                 }
             });
