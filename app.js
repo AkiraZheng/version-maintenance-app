@@ -203,20 +203,40 @@ class VersionMaintenanceApp {
         // 迁移checklist数据
         Object.keys(data.checklists || {}).forEach(key => {
             if (data.checklists[key]) {
-                data.checklists[key] = data.checklists[key].map(item => ({
-                    ...item,
-                    cautions: item.cautions || item.notes || '',
-                    notes: item.notes2 || item.notes || '',
-                    link: item.link || '',
-                    image: item.image || '',
-                    subtasks: item.subtasks ? item.subtasks.map(subtask => ({
-                        ...subtask,
-                        cautions: subtask.cautions || subtask.notes || '',
-                        notes: subtask.notes2 || subtask.notes || '',
-                        link: subtask.link || '',
-                        image: subtask.image || ''
-                    })) : []
-                }));
+                data.checklists[key] = data.checklists[key].map(item => {
+                    // 如果notes2不存在，说明数据已经是新格式，不需要迁移
+                    if (item.notes2 === undefined) {
+                        return item;
+                    }
+                    // 旧格式迁移：notes -> cautions, notes2 -> notes
+                    const migrated = {
+                        ...item,
+                        cautions: item.notes || '',
+                        notes: item.notes2 || '',
+                        link: item.link || '',
+                        image: item.image || ''
+                    };
+                    // 删除notes2避免重复迁移
+                    delete migrated.notes2;
+                    // 处理子任务
+                    if (migrated.subtasks && migrated.subtasks.length > 0) {
+                        migrated.subtasks = migrated.subtasks.map(subtask => {
+                            if (subtask.notes2 === undefined) {
+                                return subtask;
+                            }
+                            const migratedSubtask = {
+                                ...subtask,
+                                cautions: subtask.notes || '',
+                                notes: subtask.notes2 || '',
+                                link: subtask.link || '',
+                                image: subtask.image || ''
+                            };
+                            delete migratedSubtask.notes2;
+                            return migratedSubtask;
+                        });
+                    }
+                    return migrated;
+                });
             }
         });
 
@@ -1665,17 +1685,34 @@ class VersionMaintenanceApp {
 
                         Object.keys(data.checklists).forEach(key => {
                             if (data.checklists[key]) {
-                                data.checklists[key] = data.checklists[key].map(item => ({
-                                    ...item,
-                                    // 兼容旧数据：将旧版notes重命名为cautions（注意事项），确保notes字段存在
-                                    cautions: item.notes || item.cautions || '',
-                                    notes: item.notes2 || item.notes || '',
-                                    subtasks: item.subtasks ? item.subtasks.map(subtask => ({
-                                        ...subtask,
-                                        cautions: subtask.notes || subtask.cautions || '',
-                                        notes: subtask.notes2 || subtask.notes || ''
-                                    })) : []
-                                }));
+                                data.checklists[key] = data.checklists[key].map(item => {
+                                    // 如果notes2不存在，说明数据已经是新格式，不需要迁移
+                                    if (item.notes2 === undefined) {
+                                        return item;
+                                    }
+                                    // 旧格式迁移：notes -> cautions, notes2 -> notes
+                                    const migrated = {
+                                        ...item,
+                                        cautions: item.notes || '',
+                                        notes: item.notes2 || '',
+                                        subtasks: item.subtasks ? item.subtasks.map(subtask => ({
+                                            ...subtask,
+                                            cautions: subtask.notes || '',
+                                            notes: subtask.notes2 || ''
+                                        })) : []
+                                    };
+                                    // 删除notes2避免重复迁移
+                                    delete migrated.notes2;
+                                    // 处理子任务的notes2
+                                    if (migrated.subtasks) {
+                                        migrated.subtasks = migrated.subtasks.map(st => {
+                                            const stCopy = {...st};
+                                            delete stCopy.notes2;
+                                            return stCopy;
+                                        });
+                                    }
+                                    return migrated;
+                                });
                             }
                         });
 
@@ -1699,7 +1736,7 @@ class VersionMaintenanceApp {
     }
 
     async startNewWeek() {
-        const message = '确定要开始新的一周吗？\n此操作将会：\n1. 创建备份文件（浏览器会弹出下载，请手动保存）\n2. 将所有任务状态重置为待选择\n\n备份文件下载后可以随时通过"导入数据"功能恢复。';
+        const message = '确定要开始新的一周吗？\n此操作将会：\n1. 创建备份文件（浏览器会弹出下载，请手动保存）\n2. 将已勾选的任务重置为待选择状态\n\n备份文件下载后可以随时通过"导入数据"功能恢复。';
 
         if (confirm(message)) {
             await this.autoBackup('new-week');
@@ -1707,31 +1744,34 @@ class VersionMaintenanceApp {
             Object.keys(this.data.checklists).forEach(key => {
                 if (this.data.checklists[key]) {
                     this.data.checklists[key] = this.data.checklists[key].map(item => {
-                        const newItem = {
-                            ...item,
-                            completed: false,
-                            completedAt: null,
-                            taskStatus: 'pending'
-                        };
-
-                        // 所有子任务也重置为待选择
-                        if (newItem.subtasks && newItem.subtasks.length > 0) {
-                            newItem.subtasks = newItem.subtasks.map(subtask => ({
-                                ...subtask,
+                        // 只重置已勾选的任务
+                        if (item.completed) {
+                            const newItem = {
+                                ...item,
                                 completed: false,
                                 completedAt: null,
                                 taskStatus: 'pending'
-                            }));
-                        }
+                            };
 
-                        return newItem;
+                            // 已勾选的子任务也重置
+                            if (newItem.subtasks && newItem.subtasks.length > 0) {
+                                newItem.subtasks = newItem.subtasks.map(subtask => ({
+                                    ...subtask,
+                                    completed: false,
+                                    completedAt: null,
+                                    taskStatus: 'pending'
+                                }));
+                            }
+                            return newItem;
+                        }
+                        return item;
                     });
                 }
             });
 
             this.saveData();
             this.render();
-            this.showToast('新的一周已开始，所有任务已重置为待选择');
+            this.showToast('新的一周已开始，已勾选的任务已重置为待选择');
         }
     }
 
