@@ -85,6 +85,36 @@ version-maintenance-app/
 - IndexedDB 存储目录句柄
 - localStorage 做缓存层
 
+## Claude Code 使用
+
+### 快速开始（新窗口）
+
+在新 Claude Code 窗口中输入以下指令：
+
+```
+请先阅读以下文件：
+1. PREFERENCES.md（用户偏好和测试要求）
+2. CLAUDE.md（项目架构）
+
+然后告诉我当前项目的状态和待办事项。
+```
+
+或者复制以下内容直接粘贴：
+
+```markdown
+请先阅读以下文件：
+1. PREFERENCES.md（用户偏好和测试要求）
+2. CLAUDE.md（项目架构）
+
+然后告诉我当前项目的状态和待办事项。
+```
+
+### 相关文件
+
+- `PREFERENCES.md` - 用户偏好、工程规范、AI 更新规则
+- `CLAUDE.md` - Claude Code 工作指南
+- `skill/` - 需求追踪文档
+
 ## 浏览器兼容性
 
 - Chrome/Edge 90+（推荐）
