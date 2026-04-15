@@ -317,8 +317,27 @@ class VersionMaintenanceApp {
             this.hideModal();
         });
 
+        // 跟踪是否正在选择文字
+        let isSelectingText = false;
+
+        // 监听 input 和 textarea 的选择开始/结束
+        this.elements.modal.addEventListener('mousedown', (e) => {
+            const target = e.target;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+                isSelectingText = true;
+            }
+        }, true);
+
+        this.elements.modal.addEventListener('mouseup', (e) => {
+            // 延迟清除标记，因为 click 事件可能在 mouseup 之后立即触发
+            setTimeout(() => {
+                isSelectingText = false;
+            }, 100);
+        }, true);
+
+        // 点击灰色背景关闭弹窗，但如果正在选择文字则不关闭
         this.elements.modal.addEventListener('click', (e) => {
-            if (e.target === this.elements.modal) {
+            if (e.target === this.elements.modal && !isSelectingText) {
                 this.hideModal();
             }
         });
