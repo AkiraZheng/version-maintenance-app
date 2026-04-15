@@ -7,6 +7,8 @@ class VersionMaintenanceApp {
         this.data = null; // 初始化时为null，在异步初始化后填充
         this.expandedSubtasks = {};
         this.isInitialized = false;
+        this.originalEmailData = null; // 跟踪邮箱原始数据，用于检测未保存修改
+        this.pendingNavigation = null; // 待执行的导航操作（切换版本或日期）
 
         this.initElements();
         this.bindEvents();
@@ -291,7 +293,18 @@ class VersionMaintenanceApp {
     bindEvents() {
         this.elements.dayBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                this.currentDay = parseInt(btn.dataset.day);
+                const newDay = parseInt(btn.dataset.day);
+                if (newDay !== this.currentDay && this.selectedVersionId) {
+                    const dayKey = 'day_' + this.currentDay;
+                    const navigationAction = () => {
+                        this.currentDay = newDay;
+                        this.render();
+                    };
+                    if (!this.checkEmailAndNavigate(navigationAction, this.selectedVersionId, dayKey)) {
+                        return;
+                    }
+                }
+                this.currentDay = newDay;
                 this.render();
             });
         });
@@ -418,6 +431,17 @@ class VersionMaintenanceApp {
                 </div>
             `;
             item.addEventListener('click', () => {
+                if (version.id !== this.selectedVersionId && this.currentDay === 1) {
+                    const dayKey = 'day_' + this.currentDay;
+                    const navigationAction = () => {
+                        this.selectedVersionId = version.id;
+                        this.renderVersionList();
+                        this.renderVersionDetail();
+                    };
+                    if (!this.checkEmailAndNavigate(navigationAction, this.selectedVersionId, dayKey)) {
+                        return;
+                    }
+                }
                 this.selectedVersionId = version.id;
                 this.renderVersionList();
                 this.renderVersionDetail();
@@ -441,6 +465,14 @@ class VersionMaintenanceApp {
         const dayKey = 'day_' + this.currentDay;
         const checklist = this.data.checklists[version.id + '_' + dayKey] || [];
         const email = this.data.emails[version.id + '_' + dayKey] || {};
+
+        // 保存原始邮箱数据，用于检测未保存修改
+        this.originalEmailData = {
+            from: email.from || '',
+            cc: email.cc || '',
+            subject: email.subject || '',
+            content: email.content || ''
+        };
 
         const isMonday = this.currentDay === 1;
 
@@ -646,6 +678,78 @@ class VersionMaintenanceApp {
 
     bindEmailEvents(versionId, dayKey) {
         // 事件通过内联onclick绑定
+    }
+
+    // 获取当前邮箱表单的值
+    getCurrentEmailValues(versionId, dayKey) {
+        return {
+            from: document.getElementById('email-from-' + versionId + '-' + dayKey)?.value || '',
+            cc: document.getElementById('email-cc-' + versionId + '-' + dayKey)?.value || '',
+            subject: document.getElementById('email-subject-' + versionId + '-' + dayKey)?.value || '',
+            content: document.getElementById('email-content-' + versionId + '-' + dayKey)?.value || ''
+        };
+    }
+
+    // 检测邮箱是否有未保存的修改
+    isEmailModified(versionId, dayKey) {
+        if (!this.originalEmailData) return false;
+
+        const current = this.getCurrentEmailValues(versionId, dayKey);
+        return current.from !== this.originalEmailData.from ||
+               current.cc !== this.originalEmailData.cc ||
+               current.subject !== this.originalEmailData.subject ||
+               current.content !== this.originalEmailData.content;
+    }
+
+    // 显示邮箱未保存确认弹窗
+    showEmailUnsavedChangesModal(navigationAction, versionId, dayKey) {
+        this.pendingNavigation = {
+            action: navigationAction,
+            versionId: versionId,
+            dayKey: dayKey
+        };
+        this.showModal(`
+            <h2>邮箱信息未保存</h2>
+            <p style="margin: 16px 0; color: #666;">您有未保存的邮箱修改，确定要离开吗？</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="app.discardEmailChanges()">不保存，离开</button>
+                <button class="btn btn-danger" onclick="app.hideModal(); app.pendingNavigation = null;">取消</button>
+                <button class="btn btn-primary" onclick="app.saveEmailAndNavigate()">保存</button>
+            </div>
+        `);
+    }
+
+    // 放弃邮箱修改并执行导航
+    discardEmailChanges() {
+        this.originalEmailData = null;
+        this.hideModal();
+        if (this.pendingNavigation && this.pendingNavigation.action) {
+            this.pendingNavigation.action();
+        }
+        this.pendingNavigation = null;
+    }
+
+    // 保存邮箱并执行导航
+    saveEmailAndNavigate() {
+        if (this.pendingNavigation && this.pendingNavigation.versionId && this.pendingNavigation.dayKey) {
+            this.saveEmail(this.pendingNavigation.versionId, this.pendingNavigation.dayKey);
+        }
+        this.originalEmailData = null;
+        this.hideModal();
+        if (this.pendingNavigation && this.pendingNavigation.action) {
+            this.pendingNavigation.action();
+        }
+        this.pendingNavigation = null;
+    }
+
+    // 检查邮箱修改并返回是否允许导航（如果有未保存修改则弹窗确认）
+    checkEmailAndNavigate(navigationAction, versionId, dayKey) {
+        // 只有在周一时才需要检查邮箱未保存
+        if (this.currentDay === 1 && this.isEmailModified(versionId, dayKey)) {
+            this.showEmailUnsavedChangesModal(navigationAction, versionId, dayKey);
+            return false;
+        }
+        return true;
     }
 
     toggleIncompletePanel() {
