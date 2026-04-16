@@ -1678,11 +1678,20 @@ class VersionMaintenanceApp {
 
     saveEmail(versionId, dayKey) {
         const key = versionId + '_' + dayKey;
-        this.data.emails[key] = {
+        const email = {
             from: document.getElementById('email-from-' + versionId + '-' + dayKey).value.trim(),
             cc: document.getElementById('email-cc-' + versionId + '-' + dayKey).value.trim(),
             subject: document.getElementById('email-subject-' + versionId + '-' + dayKey).value.trim(),
             content: document.getElementById('email-content-' + versionId + '-' + dayKey).value.trim()
+        };
+        this.data.emails[key] = email;
+
+        // 更新原始邮箱数据，避免保存后再切换版本时提示未保存
+        this.originalEmailData = {
+            from: email.from,
+            cc: email.cc,
+            subject: email.subject,
+            content: email.content
         };
 
         this.saveData();
