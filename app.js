@@ -807,6 +807,10 @@ class VersionMaintenanceApp {
         }
     }
 
+    refreshIncompletePanel() {
+        this.renderIncompleteTasks();
+    }
+
     getAllIncompleteTasks() {
         const incompleteTasks = [];
         const dayNames = { 1: '周一', 4: '周四', 5: '周五' };
