@@ -813,11 +813,12 @@ class VersionMaintenanceApp {
 
         if (!this.data || !this.data.versions) return incompleteTasks;
 
-        this.data.versions.forEach(version => {
-            // 跳过非活跃状态的版本
-            if (version.status === 'inactive') return;
+        // 按日期顺序遍历：周四、周五、周一
+        [4, 5, 1].forEach(day => {
+            this.data.versions.forEach(version => {
+                // 跳过非活跃状态的版本
+                if (version.status === 'inactive') return;
 
-            [1, 4, 5].forEach(day => {
                 const dayKey = 'day_' + day;
                 const checklistKey = version.id + '_' + dayKey;
                 const checklist = this.data.checklists[checklistKey] || [];
