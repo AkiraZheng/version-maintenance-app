@@ -925,8 +925,6 @@ class VersionMaintenanceApp {
     }
 
     navigateToTask(versionId, day, parentIndex, subIndex = null) {
-        this.hideIncompletePanel();
-
         // Set the day
         this.currentDay = day;
 
